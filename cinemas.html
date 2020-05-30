@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Document</title>
+  </head>
+  <body>
+    <!-- 请求所有数据 -->
+    <!-- <form action="http://localhost:3000/api/cinemasbycityid" method="GET">
+      <input type="text" name="cityid" value="5dc8fe2a21ac78675a1e5c6c" />
+      <input type="submit" />
+    </form> -->
+    <!-- 分页请求数据 -->
+    <form action="http://localhost:3000/api/cinemaspagebycityid" method="GET">
+      <input type="text" name="cityid" value="5dc8fe2a21ac78675a1e5c6c" />
+      <input type="text" name="page" value="1" />
+      <input type="text" name="size" value="10" />
+      <input type="submit" />
+    </form>
+  </body>
+</html>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Document</title>
+  </head>
+  <body>
+    <!-- 新增会员 -->
+    <!-- <form action="http://localhost:3000/api/registermember" method="POST">
+      <input type="text" name="mobile" value="admin" />
+      <input type="text" name="password" value="admin" />
+      <input type="submit" />
+    </form> -->
+    <!-- 修改管理员密码，注意用户名不能修改，因为用户名不可重复 -->
+    <!-- 5dc03a67f258a20f2c5c5ed8 -->
+    <form action="http://localhost:3000/api/updatemember" method="POST">
+      <input type="text" name="_id" value="5dc03ebf3e71b71bf8589a56" />
+      <input type="text" name="mobile" value="13631649036" />
+      <input type="text" name="password" value="asdf123" />
+      <input type="submit" />
+    </form>
+    <!-- 删除管理员 -->
+    <!-- <form action="http://localhost:3000/api/admin/deleteuser" method="POST">
+      <input type="text" name="_id" value="5dc03a67f258a20f2c5c5ed8" />
+      <input type="submit" />
+    </form> -->
+
+    <!-- 查询管理员列表 -->
+    <!-- 
+    <form action="http://localhost:3000/api/admin/getadminuser" method="GET">
+      <input type="submit" />
+    </form> -->
+
+    <!-- 管理员登录 -->
+
+    <!-- <form action="http://localhost:3000/api/admin/login" method="POST">
+      <input type="text" name="username" value="admin" />
+      <input type="text" name="password" value="admin" />
+      <input type="submit" />
+    </form> -->
+  </body>
+</html>
