@@ -11,9 +11,11 @@ var db = new Db("wanda");
 const MODEL_CITY = "city"; //城市列表
 const MODEL_CINEMA = "cinema"; //影院列表
 const MODEL_MOVIE = "movie"; //影院列表
+const MODEL_BANNER = "banner"; //影院列表
 const MODEL_SALERTYPE = "salertype"; //卖品分类
 const MODEL_SALER = "saler"; //卖品
 const MODEL_MEMBER = "member"; //会员
+const MODEL_CART = "cart"; //购物车
 
 // 加密密码
 function md5(password) {
@@ -22,11 +24,90 @@ function md5(password) {
   return md5hamc.digest("hex");
 }
 /***********************************前台操作接口*************************************/
+/*****************购物车操作******************/
+//添加到购物车
+router.get("/addCart", function (req, res) {
+  var good_id = req.query._id
+  console.log(good_id)
+  var name = req.query.name
+  var imgurl = req.query.imgurl
+  var price = req.query.price
+  var num = 1
+  var cart = {
+    good_id,
+    price,
+    name,
+    num,
+    imgurl
+  }
+  db.find({
+    model_name: MODEL_CART,
+    query: { good_id },
+    callback: rst => {
+      console.log(rst)
+      if (rst.result[0]) {
+        //已经买过
+        let num = rst.result[0].num + 1
+        db.update({
+          model_name: MODEL_CART,
+          query: { good_id },
+          data: { num },
+          callback: rst => {
+            res.send(rst)
+          }
+        })
+      } else {
+        //没有买过
+        console.log(cart)
+        db.insert({
+          model_name: MODEL_CART,
+          data: cart,
+          callback: rst => {
+            res.send(rst)
+          }
+        })
+      }
+    }
+  });
+});
+//修改购物车  num
+router.get("/changeCart", function (req, res) {
+  var _id = req.query._id
+  var num = req.query.num
+  db.update({
+    model_name: MODEL_CART,
+    query: { _id },
+    data: { num },
+    callback: rst => {
+      res.send(rst);
+    }
+  });
+});
+//删除购物车  
+router.get("/deletCart", function (req, res) {
+  var _id = req.query._id
+  db.delete({
+    model_name: MODEL_CART,
+    query: { _id },
+    callback: rst => {
+      res.send(rst);
+    }
+  });
+});
+//获取购物车信息 
+router.get("/getCart", function (req, res) {
+  db.find({
+    model_name: MODEL_CART,
+    callback: rst => {
+      res.send(rst);
+    }
+  });
+});
 
 /*****************城市列表操作******************/
 
 // 城市列表查询(城市列表直接把json导入进去)
-router.get("/citys", function(req, res) {
+router.get("/citys", function (req, res) {
   db.find({
     model_name: MODEL_CITY,
     callback: rst => {
@@ -40,7 +121,7 @@ router.get("/citys", function(req, res) {
 // 城市对应的影院信息(影院是与城市关联的，每个城市有不同的影院，一对多关联关系)
 
 // 新增影院信息
-router.post("/addcinemas", function(req, res) {
+router.post("/addcinemas", function (req, res) {
   let { cinema_name, cinema_address, cityid: city } = req.body;
   db.insert({
     model_name: MODEL_CINEMA,
@@ -52,7 +133,7 @@ router.post("/addcinemas", function(req, res) {
   });
 });
 // 修改影院信息
-router.post("/updcinemas", function(req, res) {
+router.post("/updcinemas", function (req, res) {
   let { _id, cinema_name, cinema_address, cityid: city } = req.body;
   db.update({
     model_name: MODEL_CINEMA,
@@ -64,7 +145,7 @@ router.post("/updcinemas", function(req, res) {
   });
 });
 // 删除影院信息
-router.post("/delcinemas", function(req, res) {
+router.post("/delcinemas", function (req, res) {
   let { _id } = req.body;
   db.delete({
     model_name: MODEL_CINEMA,
@@ -75,7 +156,7 @@ router.post("/delcinemas", function(req, res) {
   });
 });
 // 查询影院
-router.get("/cinemas", function(req, res) {
+router.get("/cinemas", function (req, res) {
   let { currpage } = req.query;
   db.populate({
     model_name: MODEL_CINEMA,
@@ -88,7 +169,7 @@ router.get("/cinemas", function(req, res) {
   });
 });
 // 查询影院数量
-router.get("/cinemacount", function(req, res) {
+router.get("/cinemacount", function (req, res) {
   db.count({
     model_name: MODEL_CINEMA,
     callback: rst => {
@@ -96,7 +177,7 @@ router.get("/cinemacount", function(req, res) {
     }
   });
 });
-router.get("/cinemabyid", function(req, res) {
+router.get("/cinemabyid", function (req, res) {
   let { cinemaid } = req.query;
   db.findById({
     model_name: MODEL_CINEMA,
@@ -107,7 +188,7 @@ router.get("/cinemabyid", function(req, res) {
   });
 });
 // 移动端根据cityid查询当前城市下的电影院信息
-router.get("/cinemasbycityid", function(req, res) {
+router.get("/cinemasbycityid", function (req, res) {
   let { cityid: city = "" } = req.query;
   db.find({
     model_name: MODEL_CINEMA,
@@ -117,7 +198,7 @@ router.get("/cinemasbycityid", function(req, res) {
     }
   });
 });
-router.get("/cinemaspagebycityid", function(req, res) {
+router.get("/cinemaspagebycityid", function (req, res) {
   let { cityid: city = "", page = 1, size = 10 } = req.query;
   page = Number.parseInt(page);
   size = Number.parseInt(size);
@@ -136,7 +217,7 @@ router.get("/cinemaspagebycityid", function(req, res) {
 // 上传影片封面
 router.post("/admin/movie/fileupload", (req, res) => {
   var form = new formidable.IncomingForm();
-  form.parse(req, function(err, fields, files) {
+  form.parse(req, function (err, fields, files) {
     // 判断文件名如果为空，表示用户没有上传文件
     if (files.file.name == "") {
       // 新增没有选图，给默认图
@@ -240,11 +321,118 @@ router.post("/admin/movie/fileupload", (req, res) => {
       });
   });
 });
-// 新增影片信息
-router.post("/admin/addmovie", function(req, res) {
+//添加轮播图
+router.post("/admin/banner/fileupload", (req, res) => {
+  var form = new formidable.IncomingForm();
+  form.parse(req, function (err, fields, files) {
+    // 判断文件名如果为空，表示用户没有上传文件
+    if (files.file.name == "") {
+      // 新增没有选图，给默认图
+      if (fields._id == "") {
+        res.send({
+          error_code: 0,
+          reason: "成功",
+          data: { url: "/images/51_270_360_2.jpg" }
+        });
+      } else {
+        // 编辑没有选图，给上一次的图
+        res.send({
+          error_code: 0,
+          reason: "成功",
+          data: { url: fields.url }
+        });
+      }
+
+      return;
+    }
+    // 有文件的情况；目标是要将文件从临时路径剪切到目标upload目录下
+    /*
+    1、判断public下是否存在upload文件夹，如果存在则不处理，反之mkdir建立文件夹
+    2、给需要剪切的文件重命名；原因是用户上传的文件可能会重名
+    3、使用fs.rename方法完成剪切操作
+  */
+    // 1、建立public文件夹
+    let root_path = path.dirname(__dirname);
+    console.log(root_path);
+    let public_path = path.join(root_path, "public");
+    let upload_path = path.join(public_path, "upload");
+    if (!fs.existsSync(upload_path)) {
+      fs.mkdirSync(upload_path, "0777");
+    }
+
+    // let ip = req.ip.toString().replace(/\./g, '');
+
+    // 2、给文件重命名
+    // 给文件找后缀
+    let file_ext = ".jpg";
+    switch (files.file.type) {
+      case "image/jpeg":
+      case "image/jpg":
+        file_ext = ".jpg";
+        break;
+      case "image/png":
+        file_ext = ".png";
+        break;
+      case "image/gif":
+        file_ext = ".gif";
+        break;
+      default:
+        break;
+    }
+    // 使用时间戳和随机数生成新名字
+    let file_name =
+      new Date().getTime() + Math.ceil(Math.random() * 100) + file_ext;
+
+    // 3、剪切
+    let target_path = path.join(upload_path, file_name);
+
+    // 读文件流
+    let readStream = fs.createReadStream(files.file.path);
+    // 写文件流
+    let writeStream = fs.createWriteStream(target_path);
+    readStream.pipe(writeStream); //管道操作
+    // 读失败的promise
+    let readErr = new Promise((resolve, reject) => {
+      readStream.on("error", err => {
+        reject();
+      });
+    });
+    // 写失败的promise
+    let writeErr = new Promise((resolve, reject) => {
+      writeStream.on("error", err => {
+        reject();
+      });
+    });
+    let successCpy = new Promise((resolve, reject) => {
+      readStream.on("end", () => {
+        resolve();
+      });
+    });
+    // 任意一个失败就算失败
+    Promise.race([readErr, writeErr, successCpy])
+      .then(() => {
+        fs.unlinkSync(files.file.path); //删除临时文件
+        let url = path.join("/upload", file_name);
+        res.send({
+          error_code: 0,
+          reason: "成功",
+          data: { url }
+        });
+      })
+      .catch(() => {
+        res.send({
+          error_code: 0,
+          reason: "成功",
+          data: { url: "/images/51_270_360_2.jpg" }
+        });
+      });
+  });
+});
+// 新增轮播图信息
+router.post("/admin/addbanner", function (req, res) {
   let { moviename, moviedes, moviecover, cinema } = req.body;
   db.insert({
-    model_name: MODEL_MOVIE,
+    model_name: MODEL_BANNER,
     data: { moviename, moviedes, moviecover, cinema },
     callback: rst => {
       console.log(rst);
@@ -252,8 +440,20 @@ router.post("/admin/addmovie", function(req, res) {
     }
   });
 });
+// 新增影片信息
+router.post("/admin/addmovie", function (req, res) {
+  let { moviename, moviedes, moviecover, movieprice, cinema } = req.body;
+  db.insert({
+    model_name: MODEL_MOVIE,
+    data: { moviename, moviedes, moviecover, movieprice, cinema },
+    callback: rst => {
+      console.log(rst);
+      res.send(rst);
+    }
+  });
+});
 // 更新影片
-router.post("/admin/updmovie", function(req, res) {
+router.post("/admin/updmovie", function (req, res) {
   let { _id, moviename, moviedes, moviecover, cinema } = req.body;
   db.update({
     model_name: MODEL_MOVIE,
@@ -265,7 +465,7 @@ router.post("/admin/updmovie", function(req, res) {
   });
 });
 // 删除影片信息
-router.post("/admin/delmovie", function(req, res) {
+router.post("/admin/delmovie", function (req, res) {
   let { _id } = req.body;
   db.delete({
     model_name: MODEL_MOVIE,
@@ -275,8 +475,20 @@ router.post("/admin/delmovie", function(req, res) {
     }
   });
 });
+// 删除轮播图信息
+router.post("/admin/bannerdel", function (req, res) {
+  let { _id } = req.body;
+  db.delete({
+    model_name: MODEL_BANNER,
+    query: { _id },
+    callback: rst => {
+      res.send(rst);
+    }
+  });
+});
+
 // 查询影片
-router.get("/movie", function(req, res) {
+router.get("/movie", function (req, res) {
   let { currpage } = req.query;
   db.populate({
     model_name: MODEL_MOVIE,
@@ -288,8 +500,26 @@ router.get("/movie", function(req, res) {
     }
   });
 });
+// 查询影片getmovielist
+router.get("/getmovielist", function (req, res) {
+  db.find({
+    model_name: MODEL_MOVIE,
+    callback: rst => {
+      res.send(rst);
+    }
+  });
+});
+// 查询轮播图
+router.get("/banner", function (req, res) {
+  db.find({
+    model_name: MODEL_BANNER,
+    callback: rst => {
+      res.send(rst);
+    }
+  });
+});
 // 查询影片数量
-router.get("/moviecount", function(req, res) {
+router.get("/moviecount", function (req, res) {
   db.count({
     model_name: MODEL_MOVIE,
     callback: rst => {
@@ -297,7 +527,7 @@ router.get("/moviecount", function(req, res) {
     }
   });
 });
-router.get("/moviesbycinemaid", function(req, res) {
+router.get("/moviesbycinemaid", function (req, res) {
   let { cinema } = req.query;
   db.find({
     model_name: MODEL_MOVIE,
@@ -311,7 +541,7 @@ router.get("/moviesbycinemaid", function(req, res) {
 // /*****************卖品类别操作******************/
 
 // 新增卖品分类
-router.post("/addsalertype", function(req, res) {
+router.post("/addsalertype", function (req, res) {
   let { salertype } = req.body;
   db.insert({
     model_name: MODEL_SALERTYPE,
@@ -323,7 +553,7 @@ router.post("/addsalertype", function(req, res) {
   });
 });
 // 修改卖品分类
-router.post("/updsalertype", function(req, res) {
+router.post("/updsalertype", function (req, res) {
   let { _id, salertype } = req.body;
   db.update({
     model_name: MODEL_SALERTYPE,
@@ -335,7 +565,7 @@ router.post("/updsalertype", function(req, res) {
   });
 });
 // 删除卖品分类
-router.post("/delsalertype", function(req, res) {
+router.post("/delsalertype", function (req, res) {
   let { _id } = req.body;
   db.delete({
     model_name: MODEL_SALERTYPE,
@@ -346,7 +576,7 @@ router.post("/delsalertype", function(req, res) {
   });
 });
 // 查询卖品分类
-router.get("/salertype", function(req, res) {
+router.get("/salertype", function (req, res) {
   let { currpage } = req.query;
   db.pagination({
     model_name: MODEL_SALERTYPE,
@@ -357,7 +587,8 @@ router.get("/salertype", function(req, res) {
     }
   });
 });
-router.get("/salertypelist", function(req, res) {
+//查询零食列表
+router.get("/salertypelist", function (req, res) {
   db.find({
     model_name: MODEL_SALERTYPE,
     callback: rst => {
@@ -366,7 +597,7 @@ router.get("/salertypelist", function(req, res) {
   });
 });
 // 查询卖品分类梳理
-router.get("/salertypecount", function(req, res) {
+router.get("/salertypecount", function (req, res) {
   db.count({
     model_name: MODEL_SALERTYPE,
     callback: rst => {
@@ -378,7 +609,7 @@ router.get("/salertypecount", function(req, res) {
 // /*****************卖品操作******************/
 
 // 新增卖品
-router.post("/addsaler", function(req, res) {
+router.post("/addsaler", function (req, res) {
   let {
     salertitle,
     salerdes,
@@ -397,7 +628,7 @@ router.post("/addsaler", function(req, res) {
   });
 });
 // 修改卖品
-router.post("/updsaler", function(req, res) {
+router.post("/updsaler", function (req, res) {
   let {
     _id,
     salertitle,
@@ -417,7 +648,7 @@ router.post("/updsaler", function(req, res) {
   });
 });
 // 删除卖品
-router.post("/delsaler", function(req, res) {
+router.post("/delsaler", function (req, res) {
   let { _id } = req.body;
   db.delete({
     model_name: MODEL_SALER,
@@ -428,7 +659,7 @@ router.post("/delsaler", function(req, res) {
   });
 });
 // 查询卖品
-router.get("/saler", function(req, res) {
+router.get("/saler", function (req, res) {
   let { currpage, limit = 5 } = req.query;
   db.combinePopulate({
     model_name: MODEL_SALER,
@@ -441,7 +672,7 @@ router.get("/saler", function(req, res) {
   });
 });
 // 根据卖品所在影院查询卖品
-router.get("/salerbycinema", function(req, res) {
+router.get("/salerbycinema", function (req, res) {
   let { cinema } = req.query;
   db.combinePopulate({
     model_name: MODEL_SALER,
@@ -454,7 +685,7 @@ router.get("/salerbycinema", function(req, res) {
   });
 });
 // 查询卖品
-router.get("/salercount", function(req, res) {
+router.get("/salercount", function (req, res) {
   db.count({
     model_name: MODEL_SALER,
     callback: rst => {
@@ -466,7 +697,7 @@ router.get("/salercount", function(req, res) {
 /*****************会员操作******************/
 
 // 注册会员
-router.post("/registermember", function(req, res) {
+router.post("/registermember", function (req, res) {
   let { mobile, password } = req.body;
   password = md5(password);
 
@@ -479,7 +710,7 @@ router.post("/registermember", function(req, res) {
   });
 });
 // 修改会员
-router.post("/updatemember", function(req, res) {
+router.post("/updatemember", function (req, res) {
   let { _id, mobile, password } = req.body;
   password = md5(password);
   db.update({
@@ -492,7 +723,7 @@ router.post("/updatemember", function(req, res) {
   });
 });
 // 删除会员
-router.post("/deletemember", function(req, res) {
+router.post("/deletemember", function (req, res) {
   let { _id } = req.body;
   db.delete({
     model_name: MODEL_MEMBER,
@@ -503,7 +734,7 @@ router.post("/deletemember", function(req, res) {
   });
 });
 // 分页查询会员
-router.get("/memberlist", function(req, res) {
+router.get("/memberlist", function (req, res) {
   let { currpage, limit = 5 } = req.query;
   db.pagination({
     model_name: MODEL_MEMBER,
@@ -515,7 +746,7 @@ router.get("/memberlist", function(req, res) {
   });
 });
 // 查询会员数量
-router.get("/membercount", function(req, res) {
+router.get("/membercount", function (req, res) {
   db.count({
     model_name: MODEL_MEMBER,
     callback: rst => {
@@ -524,7 +755,7 @@ router.get("/membercount", function(req, res) {
   });
 });
 // 会员列表查询
-router.get("/getmember", function(req, res) {
+router.get("/getmember", function (req, res) {
   db.find({
     model_name: MODEL_MEMBER,
     callback: rst => {
@@ -533,7 +764,7 @@ router.get("/getmember", function(req, res) {
   });
 });
 // 根据会员id查询会员信息
-router.get("/admin/getmemberbyid", function(req, res) {
+router.get("/admin/getmemberbyid", function (req, res) {
   let { _id } = req.query;
   db.findById({
     model_name: MODEL_MEMBER,
@@ -545,7 +776,7 @@ router.get("/admin/getmemberbyid", function(req, res) {
 });
 
 // 会员登录
-router.post("/memberlogin", function(req, res) {
+router.post("/memberlogin", function (req, res) {
   let { mobile, password } = req.body;
   password = md5(password);
   db.count({

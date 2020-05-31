@@ -17,10 +17,6 @@ var schema = new Schema({
   moviecover: {
     type: String
   },
-  // 影片价格
-  movieprice: {
-    type: Number
-  },
   //   cinemaid
   cinema: {
     required: true,
